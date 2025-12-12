@@ -5,6 +5,27 @@ export interface N8nConnectionConfig {
   apiKey: string;
 }
 
+export const validateN8nConnection = async (config: N8nConnectionConfig): Promise<boolean> => {
+  const cleanUrl = config.baseUrl.replace(/\/$/, "");
+  // Try to fetch a lightweight resource to validate auth
+  const endpoint = `${cleanUrl}/api/v1/workflows?limit=1`;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "X-N8N-API-KEY": config.apiKey,
+      },
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.error("Validation Error:", error);
+    return false;
+  }
+};
+
 export const saveWorkflowToN8n = async (
   config: N8nConnectionConfig,
   workflow: N8nWorkflow
