@@ -19,7 +19,16 @@ export const validateN8nConnection = async (config: N8nConnectionConfig): Promis
       },
     });
 
-    return response.ok;
+    // Check if status is OK
+    if (!response.ok) return false;
+
+    // Check if content-type is JSON (prevents HTML parking pages from passing as valid)
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+        return false;
+    }
+
+    return true;
   } catch (error) {
     console.error("Validation Error:", error);
     return false;
