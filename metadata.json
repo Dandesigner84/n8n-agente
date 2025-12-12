@@ -1,0 +1,5 @@
+{
+  "name": "N8N Architect AI",
+  "description": "An AI-powered agent to generate, configure, and explain n8n automation workflows. Chat with the agent to build connections and get setup guidance.",
+  "requestFramePermissions": []
+}
