@@ -5,7 +5,12 @@ export interface N8nConnectionConfig {
   apiKey: string;
 }
 
-export const validateN8nConnection = async (config: N8nConnectionConfig): Promise<boolean> => {
+export interface ValidationResult {
+  success: boolean;
+  error?: string;
+}
+
+export const validateN8nConnection = async (config: N8nConnectionConfig): Promise<ValidationResult> => {
   const cleanUrl = config.baseUrl.replace(/\/$/, "");
   // Try to fetch a lightweight resource to validate auth
   const endpoint = `${cleanUrl}/api/v1/workflows?limit=1`;
@@ -20,18 +25,32 @@ export const validateN8nConnection = async (config: N8nConnectionConfig): Promis
     });
 
     // Check if status is OK
-    if (!response.ok) return false;
+    if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+            return { success: false, error: "Chave API inválida (Erro 401/403)." };
+        }
+        return { success: false, error: `Erro do servidor: ${response.status} ${response.statusText}` };
+    }
 
     // Check if content-type is JSON (prevents HTML parking pages from passing as valid)
     const contentType = response.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
-        return false;
+        return { success: false, error: "A URL informada não parece ser uma API n8n válida (não retornou JSON)." };
     }
 
-    return true;
+    return { success: true };
   } catch (error) {
     console.error("Validation Error:", error);
-    return false;
+    const msg = (error as Error).message;
+    
+    if (msg === 'Failed to fetch' || msg.includes('NetworkError')) {
+        return { 
+            success: false, 
+            error: "Bloqueio de CORS ou Erro de Rede. Se você está usando a versão Web, o navegador bloqueou a conexão com seu servidor. Use este app como Extensão do Chrome ou configure cabeçalhos CORS no seu n8n." 
+        };
+    }
+    
+    return { success: false, error: `Erro inesperado: ${msg}` };
   }
 };
 

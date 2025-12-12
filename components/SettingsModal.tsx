@@ -39,15 +39,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
     const newConfig = { baseUrl: formattedUrl, apiKey: apiKey.trim() };
 
     // Validate before saving
-    const isValid = await validateN8nConnection(newConfig);
-    
-    setIsValidating(false);
-
-    if (isValid) {
-        onSave(newConfig);
-        onClose();
-    } else {
-        setError("Não foi possível conectar. Verifique a URL e a API Key.");
+    try {
+        const result = await validateN8nConnection(newConfig);
+        
+        if (result.success) {
+            onSave(newConfig);
+            onClose();
+        } else {
+            setError(result.error || "Erro desconhecido ao validar.");
+        }
+    } catch (e) {
+        setError("Erro de execução na validação.");
+    } finally {
+        setIsValidating(false);
     }
   };
 
@@ -126,8 +130,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
               disabled={isValidating}
               className={`px-4 py-2 rounded-md text-sm bg-n8n-primary hover:bg-n8n-hover text-white font-medium flex items-center gap-2 shadow-lg shadow-n8n-primary/20 ${isValidating ? 'opacity-70 cursor-wait' : ''}`}
             >
-              {isValidating ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-              {isValidating ? 'Testando...' : 'Salvar Conexão'}
+              {/* Wrapped in spans to maintain DOM stability */}
+              {isValidating ? (
+                  <span className="flex items-center gap-2">
+                      <Loader2 className="animate-spin" size={16} /> Testando...
+                  </span>
+              ) : (
+                  <span className="flex items-center gap-2">
+                      <Save size={16} /> Salvar Conexão
+                  </span>
+              )}
             </button>
           </div>
         </form>

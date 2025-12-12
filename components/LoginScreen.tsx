@@ -33,14 +33,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
 
     setIsValidating(true);
     try {
-        const isValid = await validateN8nConnection(config);
-        if (isValid) {
+        const result = await validateN8nConnection(config);
+        if (result.success) {
             onLogin(config);
         } else {
-            setError('Não foi possível conectar. Verifique a URL e a API Key. Certifique-se de que sua instância n8n está acessível.');
+            setError(result.error || 'Não foi possível conectar.');
         }
     } catch (err) {
-        setError('Erro de conexão. Verifique se o n8n está rodando e acessível.');
+        setError('Erro crítico ao tentar conectar.');
     } finally {
         setIsValidating(false);
     }
@@ -112,16 +112,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                 disabled={isValidating}
                 className={`w-full bg-[#ff6d5a] hover:bg-[#ff8f7e] text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] shadow-lg shadow-[#ff6d5a]/20 ${isValidating ? 'opacity-80 cursor-wait' : ''}`}
             >
+                {/* Wrapping content in spans to prevent React removeChild errors when swapping icons */}
                 {isValidating ? (
-                    <>
+                    <span className="flex items-center gap-2">
                         <Loader2 size={18} className="animate-spin" />
                         Verificando conexão...
-                    </>
+                    </span>
                 ) : (
-                    <>
+                    <span className="flex items-center gap-2">
                         Conectar e Acessar
                         <ArrowRight size={18} />
-                    </>
+                    </span>
                 )}
             </button>
         </form>
