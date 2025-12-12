@@ -7,7 +7,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { sendMessageToGemini } from './services/geminiService';
 import { N8nConnectionConfig } from './services/n8nApiService';
 import { Message, N8nWorkflow } from './types';
-import { Workflow, Settings, Globe, Monitor, LogOut } from 'lucide-react';
+import { Workflow, Settings, Globe, Monitor, LogOut, WifiOff } from 'lucide-react';
 
 const App: React.FC = () => {
   // Authentication State
@@ -43,9 +43,11 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const handleLogin = (config: N8nConnectionConfig) => {
+  const handleLogin = (config: N8nConnectionConfig | null) => {
     setN8nConfig(config);
-    localStorage.setItem('n8n_config', JSON.stringify(config));
+    if (config) {
+        localStorage.setItem('n8n_config', JSON.stringify(config));
+    }
     setIsAuthenticated(true);
   };
 
@@ -95,7 +97,7 @@ const App: React.FC = () => {
       console.error(error);
       const errorMsg: Message = {
         role: 'model',
-        content: "Erro de comunicação. Verifique sua conexão.",
+        content: "Erro de comunicação com a IA. Verifique sua chave API do Gemini.",
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMsg]);
@@ -126,6 +128,11 @@ const App: React.FC = () => {
                <Workflow className="text-[#ff6d5a] w-5 h-5" />
             </div>
             <h1 className="text-white font-bold text-lg tracking-tight hidden sm:block">N8N Architect</h1>
+            {!n8nConfig && (
+                <span className="bg-black/20 text-white/80 text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <WifiOff size={10} /> Offline
+                </span>
+            )}
         </div>
         
         {/* View Mode Toggle */}
@@ -193,8 +200,20 @@ const App: React.FC = () => {
                     </div>
                 </>
             ) : (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                    Carregando...
+                <div className="flex flex-col items-center justify-center h-full text-gray-500 bg-gray-100 gap-4">
+                    <div className="bg-white p-6 rounded-xl shadow-sm text-center max-w-sm">
+                        <WifiOff size={48} className="mx-auto text-gray-300 mb-4" />
+                        <h3 className="text-lg font-semibold text-gray-800">Modo Offline</h3>
+                        <p className="text-sm text-gray-500 mt-2">
+                            Você não está conectado a uma instância n8n. Configure a conexão nas configurações para acessar o painel ao vivo.
+                        </p>
+                        <button 
+                            onClick={() => setIsSettingsOpen(true)}
+                            className="mt-4 text-n8n-primary hover:underline text-sm font-medium"
+                        >
+                            Conectar agora
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

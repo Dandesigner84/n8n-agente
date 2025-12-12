@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Server, Key, ArrowRight, ExternalLink, Workflow, Loader2, AlertCircle } from 'lucide-react';
+import { Server, Key, ArrowRight, ExternalLink, Workflow, Loader2, AlertCircle, EyeOff } from 'lucide-react';
 import { N8nConnectionConfig, validateN8nConnection } from '../services/n8nApiService';
 
 interface LoginScreenProps {
-  onLogin: (config: N8nConnectionConfig) => void;
+  onLogin: (config: N8nConnectionConfig | null) => void;
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
@@ -34,16 +34,26 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     setIsValidating(true);
     try {
         const result = await validateN8nConnection(config);
+        
         if (result.success) {
+            // Success! We call onLogin immediately.
+            // IMPORTANT: Do not set isValidating(false) here because the component will unmount.
+            // Updating state on an unmounting component causes React errors (removeChild, etc).
             onLogin(config);
         } else {
+            // Failed, remain on screen
             setError(result.error || 'Não foi possível conectar.');
+            setIsValidating(false);
         }
     } catch (err) {
         setError('Erro crítico ao tentar conectar.');
-    } finally {
         setIsValidating(false);
     }
+  };
+
+  const handleSkip = () => {
+      // Offline mode
+      onLogin(null);
   };
 
   return (
@@ -112,11 +122,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                 disabled={isValidating}
                 className={`w-full bg-[#ff6d5a] hover:bg-[#ff8f7e] text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] shadow-lg shadow-[#ff6d5a]/20 ${isValidating ? 'opacity-80 cursor-wait' : ''}`}
             >
-                {/* Wrapping content in spans to prevent React removeChild errors when swapping icons */}
                 {isValidating ? (
                     <span className="flex items-center gap-2">
                         <Loader2 size={18} className="animate-spin" />
-                        Verificando conexão...
+                        Verificando...
                     </span>
                 ) : (
                     <span className="flex items-center gap-2">
@@ -124,6 +133,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                         <ArrowRight size={18} />
                     </span>
                 )}
+            </button>
+
+            <div className="relative flex py-2 items-center">
+                <div className="flex-grow border-t border-gray-700"></div>
+                <span className="flex-shrink-0 mx-4 text-gray-500 text-xs">OU</span>
+                <div className="flex-grow border-t border-gray-700"></div>
+            </div>
+
+            <button
+                type="button"
+                onClick={handleSkip}
+                className="w-full bg-transparent hover:bg-gray-800 text-gray-400 hover:text-white border border-gray-700 font-medium py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all text-sm"
+            >
+                <EyeOff size={16} />
+                Entrar no Modo Offline
             </button>
         </form>
 
@@ -140,8 +164,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
         </div>
       </div>
       
-      <div className="mt-8 text-gray-600 text-xs text-center max-w-xs">
-        Ao conectar, seus dados são salvos apenas localmente no seu navegador.
+      <div className="mt-8 text-gray-500 text-[10px] text-center max-w-xs leading-relaxed">
+        <strong>Nota sobre CORS:</strong> Se estiver usando a versão Web e sua conexão for bloqueada, use o "Modo Offline" para gerar workflows e copie o JSON manualmente.
       </div>
     </div>
   );
