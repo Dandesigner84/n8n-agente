@@ -22,26 +22,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     }
 
     let formattedUrl = baseUrl.trim();
-    // Basic cleanup
     if (!formattedUrl.startsWith('http')) {
         formattedUrl = `https://${formattedUrl}`;
     }
-    // Remove trailing slash
     formattedUrl = formattedUrl.replace(/\/$/, "");
 
     const config = { baseUrl: formattedUrl, apiKey: apiKey.trim() };
 
     setIsValidating(true);
+    
     try {
         const result = await validateN8nConnection(config);
         
         if (result.success) {
-            // Success! We call onLogin immediately.
-            // IMPORTANT: Do not set isValidating(false) here because the component will unmount.
-            // Updating state on an unmounting component causes React errors (removeChild, etc).
+            // Ensure we don't try to update state after this point if onLogin unmounts us
             onLogin(config);
         } else {
-            // Failed, remain on screen
             setError(result.error || 'Não foi possível conectar.');
             setIsValidating(false);
         }
@@ -52,7 +48,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   };
 
   const handleSkip = () => {
-      // Offline mode
       onLogin(null);
   };
 
@@ -122,17 +117,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                 disabled={isValidating}
                 className={`w-full bg-[#ff6d5a] hover:bg-[#ff8f7e] text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] shadow-lg shadow-[#ff6d5a]/20 ${isValidating ? 'opacity-80 cursor-wait' : ''}`}
             >
-                {isValidating ? (
-                    <span className="flex items-center gap-2">
-                        <Loader2 size={18} className="animate-spin" />
-                        Verificando...
-                    </span>
-                ) : (
-                    <span className="flex items-center gap-2">
-                        Conectar e Acessar
-                        <ArrowRight size={18} />
-                    </span>
-                )}
+                {/* Simplified DOM structure to avoid removeChild errors during fast unmounts */}
+                {isValidating && <Loader2 size={18} className="animate-spin" />}
+                {!isValidating && "Conectar e Acessar"}
+                {!isValidating && <ArrowRight size={18} />}
+                {isValidating && "Verificando..."}
             </button>
 
             <div className="relative flex py-2 items-center">
